@@ -1,0 +1,23 @@
+# secrets
+.env
+
+# python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# local sqlite dev db
+*.db
+
+# docker volume (if bind-mounted locally)
+postgres-data/
+
+# os/editor
+.DS_Store
+.vscode/
+.idea/
