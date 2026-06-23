@@ -41,9 +41,10 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     # --- API v1 routers ---
-    from app.api.v1.routers import auth, customers, dashboard, interactions
+    from app.api.v1.routers import auth, customers, dashboard, interactions, users
 
     app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(users.router, prefix="/api/v1")
     app.include_router(customers.router, prefix="/api/v1")
     app.include_router(interactions.router, prefix="/api/v1")
     app.include_router(dashboard.router, prefix="/api/v1")
