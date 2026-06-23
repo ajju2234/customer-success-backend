@@ -10,12 +10,56 @@ with JWT auth and role-based access control.
 
 ---
 
+## 🚀 Live Demo & Evaluator Guide
+
+| | URL |
+|---|---|
+| **App (frontend)** | https://customer-success-frontend-iota.vercel.app |
+| **API + Swagger docs** | `https://<railway-backend-url>/docs` |
+
+Stack in production: **Vercel** (Next.js) · **Railway** (FastAPI) · **Supabase** (PostgreSQL) · **Upstash** (Redis).
+
+### 🔑 Demo credentials — every account's password is `Test@1234`
+
+| Role | Email | What they can do |
+|------|-------|------------------|
+| **Admin** | `sarah.chen@csp.com` | Everything + **Users** management screen + org-wide dashboard |
+| **Manager** | `michael.rodriguez@csp.com` | All customers & interactions, org-wide dashboard (no user management) |
+| **Manager** | `priya.sharma@csp.com` | — |
+| **Manager** | `david.thompson@csp.com` | — |
+| **CSM** | `emily.watson@csp.com` | Only **their own** customers & interactions; dashboard scoped to them |
+| **CSM** | `james.park@csp.com` | — |
+| **CSM** | `aisha.khan@csp.com` | — |
+| **CSM** | `carlos.mendez@csp.com` | — |
+| **CSM** | `nina.petrov@csp.com` | — |
+
+The database is pre-seeded with **14 customers** and **19 interactions** (with AI insights) across the CSMs, so the dashboard is populated. Re-seed anytime with `python -m scripts.seed`.
+
+### 👀 How to see RBAC in action
+1. **Log in as the Admin** (`sarah.chen@csp.com`) → sidebar shows a **Users** link; you see **all** customers/interactions and an org-wide dashboard. Open **Users** to change anyone's role / activate-deactivate.
+2. **Log in as a Manager** (`michael.rodriguez@csp.com`) → org-wide data & dashboard, but **no Users link** (try opening `/users` → access denied; the API returns `403`).
+3. **Log in as a CSM** (`emily.watson@csp.com`) → you only see **your own** customers & interactions, and the dashboard counts are **scoped to you** — a different CSM (`aisha.khan@csp.com`) sees a different set. This proves the ownership isolation.
+
+### 🛡️ RBAC matrix (enforced server-side)
+
+| Capability | Admin | Manager | CSM |
+|---|:---:|:---:|:---:|
+| Manage users & assign roles | ✅ | ❌ | ❌ |
+| View/manage **all** customers & interactions | ✅ | ✅ | ❌ (own only) |
+| Create/edit/delete own customers & interactions | ✅ | ✅ | ✅ |
+| Dashboard scope | org-wide | org-wide | own accounts |
+| Generate AI insights | ✅ | ✅ | ✅ |
+
+Authorization is enforced in a FastAPI `require_roles(...)` dependency **plus** `owner_id` ownership checks in the service layer — the UI simply reflects it (and hides the Users link for non-admins).
+
+---
+
 ## ✨ Features
 
 - **Auth & RBAC** — register / login / refresh / profile with JWT (short-lived access token + httpOnly refresh cookie). Roles: `admin`, `manager`, `csm`.
 - **Customers** — full CRUD, search, status filter, pagination, ownership scoping.
 - **Interactions** — log meetings/calls/emails/notes per customer, with filters.
-- **AI insights** — summary, sentiment, action items, risks via OpenRouter, with strict-JSON parsing, one retry, and a graceful heuristic **fallback** so the app never breaks.
+- **AI insights** — summary, sentiment, action items, risks via an OpenAI-compatible LLM (Google Gemini / OpenRouter / OpenAI), with strict-JSON parsing, one retry, and a graceful heuristic **fallback** so the app never breaks.
 - **Dashboard** — KPIs + chart data, role-scoped.
 - **Redis caching** — dashboard metrics cached with a TTL and **invalidated on every write**.
 
