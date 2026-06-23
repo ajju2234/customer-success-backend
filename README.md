@@ -17,7 +17,7 @@ behind JWT auth with **role-based access control** (admin / manager / csm).
 | | URL |
 |---|---|
 | **App (use this)** | **https://customerorbit.vercel.app** |
-| **API + interactive Swagger docs** | `https://<YOUR-RAILWAY-APP>.up.railway.app/docs` |
+| **API + interactive Swagger docs** | https://customer-success-backend-production.up.railway.app/docs |
 
 Production stack: **Vercel** (Next.js frontend) · **Railway** (FastAPI backend) · **Supabase** (PostgreSQL) · **Upstash** (Redis) · **Google Gemini Flash-Lite** (AI).
 
