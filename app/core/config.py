@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
+    reset_token_expire_minutes: int = 30
 
     # Refresh-cookie flags. Local dev = lax/insecure; cross-domain prod (Vercel ↔
     # Render) needs samesite="none" + secure=True so the browser sends the cookie.
@@ -34,9 +35,21 @@ class Settings(BaseSettings):
     ai_model: str = "openai/gpt-4o-mini"
     ai_base_url: str = "https://openrouter.ai/api/v1"
 
+    # --- Email (SMTP) for password-reset links ---
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""  # falls back to smtp_user
+    frontend_url: str = "http://localhost:3004"  # used to build the reset link
+
     # --- App ---
     cors_origins: str = "http://localhost:3000"
     dashboard_cache_ttl_seconds: int = 60
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_user and self.smtp_password)
 
     @property
     def cors_origins_list(self) -> list[str]:

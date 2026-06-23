@@ -14,6 +14,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ACCESS = "access"
 REFRESH = "refresh"
+RESET = "reset"
 
 
 def hash_password(password: str) -> str:
@@ -49,6 +50,12 @@ def create_refresh_token(user_id: str, role: str) -> str:
     )
 
 
+def create_reset_token(user_id: str) -> str:
+    return _create_token(
+        user_id, "", RESET, timedelta(minutes=settings.reset_token_expire_minutes)
+    )
+
+
 def decode_token(token: str) -> dict[str, Any]:
     """Decode + verify a JWT. Raises JWTError on any failure (expiry, signature)."""
     return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
@@ -57,10 +64,12 @@ def decode_token(token: str) -> dict[str, Any]:
 __all__ = [
     "ACCESS",
     "REFRESH",
+    "RESET",
     "hash_password",
     "verify_password",
     "create_access_token",
     "create_refresh_token",
+    "create_reset_token",
     "decode_token",
     "JWTError",
 ]

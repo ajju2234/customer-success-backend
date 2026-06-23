@@ -40,3 +40,34 @@ async def test_invalid_password_too_short(client):
         json={"name": "x", "email": "short@x.com", "password": "123"},
     )
     assert r.status_code == 422  # validation
+
+
+async def test_forgot_then_reset_password(client):
+    await register(client, "u@x.com", password="password123")
+
+    # request a reset → demo returns the token
+    r = await client.post("/api/v1/auth/forgot-password", json={"email": "u@x.com"})
+    assert r.status_code == 200
+    token = r.json()["reset_token"]
+    assert token
+
+    # old password should no longer work after reset; new one should
+    r = await client.post(
+        "/api/v1/auth/reset-password", json={"token": token, "new_password": "newpass456"}
+    )
+    assert r.status_code == 204
+
+    assert (await client.post("/api/v1/auth/login", json={"email": "u@x.com", "password": "password123"})).status_code == 401
+    assert (await client.post("/api/v1/auth/login", json={"email": "u@x.com", "password": "newpass456"})).status_code == 200
+
+
+async def test_forgot_password_unknown_email_is_generic(client):
+    r = await client.post("/api/v1/auth/forgot-password", json={"email": "nobody@x.com"})
+    assert r.status_code == 200 and r.json()["reset_token"] is None
+
+
+async def test_reset_with_bad_token_fails(client):
+    r = await client.post(
+        "/api/v1/auth/reset-password", json={"token": "not-a-token", "new_password": "whatever12"}
+    )
+    assert r.status_code == 400

@@ -1,11 +1,20 @@
 """Authentication business logic: registration and credential verification."""
 from __future__ import annotations
 
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, verify_password
+from app.core.security import (
+    RESET,
+    JWTError,
+    create_reset_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 from app.models.user import User
 from app.schemas.auth import RegisterRequest
 
@@ -37,3 +46,26 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
     if not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is inactive")
     return user
+
+
+async def create_password_reset(db: AsyncSession, email: str) -> str | None:
+    """Return a short-lived reset token if the email belongs to a user, else None."""
+    user = await get_user_by_email(db, email)
+    if user is None:
+        return None
+    return create_reset_token(str(user.id))
+
+
+async def reset_password(db: AsyncSession, token: str, new_password: str) -> None:
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired reset link")
+    if payload.get("type") != RESET:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid reset token")
+
+    user = await db.get(User, uuid.UUID(payload["sub"]))
+    if user is None or not user.is_active:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Account not found or inactive")
+    user.hashed_password = hash_password(new_password)
+    await db.flush()

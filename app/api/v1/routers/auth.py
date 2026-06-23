@@ -1,12 +1,14 @@
 """Authentication endpoints."""
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Cookie, HTTPException, Response, status
 
 from app.core.config import settings
 from app.core.deps import CurrentUser, DbDep
+from app.core.email import reset_password_email, send_email
 from app.core.security import (
     REFRESH,
     JWTError,
@@ -15,10 +17,24 @@ from app.core.security import (
     decode_token,
 )
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
-from app.services.auth_service import authenticate, register_user
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserOut,
+)
+from app.services.auth_service import (
+    authenticate,
+    create_password_reset,
+    register_user,
+    reset_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger("auth")
 
 REFRESH_COOKIE = "refresh_token"
 
@@ -80,6 +96,35 @@ async def logout() -> Response:
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
     response.delete_cookie(REFRESH_COOKIE, path="/")
     return response
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(data: ForgotPasswordRequest, db: DbDep) -> ForgotPasswordResponse:
+    token = await create_password_reset(db, data.email)
+    demo_token: str | None = None
+
+    if token:
+        reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+        if settings.email_enabled:
+            try:
+                await send_email(data.email, "Reset your password", reset_password_email(reset_url))
+            except Exception:  # pragma: no cover - don't leak SMTP errors to the client
+                logger.exception("Failed to send password-reset email")
+        else:
+            # No SMTP configured (e.g. local dev) → return the token so the flow still works.
+            demo_token = token
+
+    # Generic message either way so we don't reveal which emails are registered.
+    return ForgotPasswordResponse(
+        message="If that email is registered, a password reset link has been sent.",
+        reset_token=demo_token,
+    )
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_password_endpoint(data: ResetPasswordRequest, db: DbDep) -> Response:
+    await reset_password(db, data.token, data.new_password)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me", response_model=UserOut)
