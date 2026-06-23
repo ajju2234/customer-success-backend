@@ -30,6 +30,7 @@ class InteractionOut(BaseModel):
 
     id: uuid.UUID
     customer_id: uuid.UUID
+    customer_name: str | None = None
     user_id: uuid.UUID | None
     type: InteractionType
     title: str

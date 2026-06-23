@@ -34,3 +34,8 @@ class Interaction(UUIDMixin, TimestampMixin, Base):
     insight: Mapped["AIInsight | None"] = relationship(  # noqa: F821
         back_populates="interaction", uselist=False, cascade="all, delete-orphan"
     )
+
+    @property
+    def customer_name(self) -> str | None:
+        # Requires the `customer` relationship to be eager-loaded (see service queries).
+        return self.customer.name if self.customer else None

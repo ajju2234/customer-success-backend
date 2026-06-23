@@ -22,7 +22,7 @@ from app.services.customer_service import get_customer, is_privileged
 async def _load(db: AsyncSession, interaction_id: uuid.UUID) -> Interaction | None:
     result = await db.execute(
         select(Interaction)
-        .options(selectinload(Interaction.insight))
+        .options(selectinload(Interaction.insight), selectinload(Interaction.customer))
         .where(Interaction.id == interaction_id)
     )
     return result.scalar_one_or_none()
@@ -70,7 +70,7 @@ async def list_interactions(
 
     total = await db.scalar(select(func.count()).select_from(base.subquery()))
     rows = await db.execute(
-        base.options(selectinload(Interaction.insight))
+        base.options(selectinload(Interaction.insight), selectinload(Interaction.customer))
         .order_by(Interaction.meeting_date.desc())
         .offset((page - 1) * limit)
         .limit(limit)
