@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    # Refresh-cookie flags. Local dev = lax/insecure; cross-domain prod (Vercel ↔
+    # Render) needs samesite="none" + secure=True so the browser sends the cookie.
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+
     # --- AI (any OpenAI-compatible provider: OpenRouter, Google Gemini, OpenAI) ---
     ai_api_key: str = ""
     ai_model: str = "openai/gpt-4o-mini"

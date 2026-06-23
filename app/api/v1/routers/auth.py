@@ -28,8 +28,8 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         key=REFRESH_COOKIE,
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,  # set True behind HTTPS in production
+        samesite=settings.cookie_samesite,  # "none" for cross-domain prod
+        secure=settings.cookie_secure,  # True behind HTTPS in production
         max_age=settings.refresh_token_expire_days * 24 * 3600,
         path="/",
     )
